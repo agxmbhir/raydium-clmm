@@ -5,7 +5,6 @@ edition = "2021"
 
 [lib]
 name = "raydium_amm_v3_client"
-crate-type = ["lib"]
 
 [[bin]]
 name = "client"
