@@ -1165,38 +1165,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
 
 [[package]]
-name = "client"
-version = "0.1.0"
-dependencies = [
- "anchor-client",
- "anchor-lang",
- "anyhow",
- "arrayref",
- "base64 0.21.7",
- "bincode",
- "bs58",
- "clap 4.5.37",
- "colorful",
- "configparser",
- "hex",
- "mpl-token-metadata",
- "rand 0.9.1",
- "raydium-amm-v3",
- "regex",
- "serde",
- "serde_json",
- "solana-account-decoder",
- "solana-client",
- "solana-sdk",
- "solana-transaction-status",
- "spl-associated-token-account 6.0.0",
- "spl-memo",
- "spl-token 7.0.0",
- "spl-token-2022 7.0.0",
- "spl-token-client",
-]
-
-[[package]]
 name = "colorchoice"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3788,6 +3756,38 @@ dependencies = [
  "solana-security-txt",
  "spl-token-2022 7.0.0",
  "uint",
+]
+
+[[package]]
+name = "raydium_amm_v3_client"
+version = "0.1.0"
+dependencies = [
+ "anchor-client",
+ "anchor-lang",
+ "anyhow",
+ "arrayref",
+ "base64 0.21.7",
+ "bincode",
+ "bs58",
+ "clap 4.5.37",
+ "colorful",
+ "configparser",
+ "hex",
+ "mpl-token-metadata",
+ "rand 0.9.1",
+ "raydium-amm-v3",
+ "regex",
+ "serde",
+ "serde_json",
+ "solana-account-decoder",
+ "solana-client",
+ "solana-sdk",
+ "solana-transaction-status",
+ "spl-associated-token-account 6.0.0",
+ "spl-memo",
+ "spl-token 7.0.0",
+ "spl-token-2022 7.0.0",
+ "spl-token-client",
 ]
 
 [[package]]

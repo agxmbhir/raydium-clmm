@@ -1,14 +1,8 @@
 [package]
-name = "client"
+name = "raydium_amm_v3_client"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-name = "raydium_amm_v3_client"
-
-[[bin]]
-name = "client"
-path = "src/main.rs"
 
 [dependencies]
 mpl-token-metadata = { version = "5.1.0" }
