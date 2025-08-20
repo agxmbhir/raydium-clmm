@@ -1,29 +1,32 @@
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
-use raydium_amm_v3::libraries::fixed_point_64;
 use raydium_amm_v3::libraries::*;
 use raydium_amm_v3::states::*;
+
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::program_pack::Pack;
-use solana_sdk::{account::Account, pubkey::Pubkey};
+use solana_sdk::{ account::Account, pubkey::Pubkey };
 use spl_token_2022::{
     extension::{
-        confidential_transfer::{ConfidentialTransferAccount, ConfidentialTransferMint},
+        confidential_transfer::{ ConfidentialTransferAccount, ConfidentialTransferMint },
         cpi_guard::CpiGuard,
         default_account_state::DefaultAccountState,
         immutable_owner::ImmutableOwner,
         interest_bearing_mint::InterestBearingConfig,
         memo_transfer::MemoTransfer,
         mint_close_authority::MintCloseAuthority,
-        non_transferable::{NonTransferable, NonTransferableAccount},
+        non_transferable::{ NonTransferable, NonTransferableAccount },
         permanent_delegate::PermanentDelegate,
-        transfer_fee::{TransferFeeAmount, TransferFeeConfig, MAX_FEE_BASIS_POINTS},
-        BaseState, BaseStateWithExtensions, ExtensionType, StateWithExtensions,
+        transfer_fee::{ TransferFeeAmount, TransferFeeConfig, MAX_FEE_BASIS_POINTS },
+        BaseState,
+        BaseStateWithExtensions,
+        ExtensionType,
+        StateWithExtensions,
     },
     state::Mint,
 };
 use std::collections::VecDeque;
-use std::ops::{DerefMut, Mul, Neg};
+use std::ops::{ DerefMut, Mul, Neg };
 
 pub fn deserialize_anchor_account<T: AccountDeserialize>(account: &Account) -> Result<T> {
     let mut data: &[u8] = &account.data;
@@ -67,7 +70,7 @@ pub fn get_pool_mints_inverse_fee(
     token_mint_0: Pubkey,
     token_mint_1: Pubkey,
     post_fee_amount_0: u64,
-    post_fee_amount_1: u64,
+    post_fee_amount_1: u64
 ) -> (TransferFeeInfo, TransferFeeInfo) {
     let load_accounts = vec![token_mint_0, token_mint_1];
     let rsps = rpc_client.get_multiple_accounts(&load_accounts).unwrap();
@@ -95,7 +98,7 @@ pub fn get_pool_mints_transfer_fee(
     token_mint_0: Pubkey,
     token_mint_1: Pubkey,
     pre_fee_amount_0: u64,
-    pre_fee_amount_1: u64,
+    pre_fee_amount_1: u64
 ) -> (TransferFeeInfo, TransferFeeInfo) {
     let load_accounts = vec![token_mint_0, token_mint_1];
     let rsps = rpc_client.get_multiple_accounts(&load_accounts).unwrap();
@@ -122,16 +125,14 @@ pub fn get_pool_mints_transfer_fee(
 pub fn get_transfer_inverse_fee<'data, S: BaseState + Pack>(
     account_state: &StateWithExtensions<'data, S>,
     epoch: u64,
-    post_fee_amount: u64,
+    post_fee_amount: u64
 ) -> u64 {
     let fee = if let Ok(transfer_fee_config) = account_state.get_extension::<TransferFeeConfig>() {
         let transfer_fee = transfer_fee_config.get_epoch_fee(epoch);
         if u16::from(transfer_fee.transfer_fee_basis_points) == MAX_FEE_BASIS_POINTS {
             u64::from(transfer_fee.maximum_fee)
         } else {
-            transfer_fee_config
-                .calculate_inverse_epoch_fee(epoch, post_fee_amount)
-                .unwrap()
+            transfer_fee_config.calculate_inverse_epoch_fee(epoch, post_fee_amount).unwrap()
         }
     } else {
         0
@@ -143,12 +144,10 @@ pub fn get_transfer_inverse_fee<'data, S: BaseState + Pack>(
 pub fn get_transfer_fee<'data, S: BaseState + Pack>(
     account_state: &StateWithExtensions<'data, S>,
     epoch: u64,
-    pre_fee_amount: u64,
+    pre_fee_amount: u64
 ) -> u64 {
     let fee = if let Ok(transfer_fee_config) = account_state.get_extension::<TransferFeeConfig>() {
-        transfer_fee_config
-            .calculate_epoch_fee(epoch, pre_fee_amount)
-            .unwrap()
+        transfer_fee_config.calculate_epoch_fee(epoch, pre_fee_amount).unwrap()
     } else {
         0
     };
@@ -156,7 +155,7 @@ pub fn get_transfer_fee<'data, S: BaseState + Pack>(
 }
 
 pub fn get_account_extensions<'data, S: BaseState + Pack>(
-    account_state: &StateWithExtensions<'data, S>,
+    account_state: &StateWithExtensions<'data, S>
 ) -> Vec<ExtensionStruct> {
     let mut extensions: Vec<ExtensionStruct> = Vec::new();
     let extension_types = account_state.get_extension_types().unwrap();
@@ -170,9 +169,7 @@ pub fn get_account_extensions<'data, S: BaseState + Pack>(
                 extensions.push(ExtensionStruct::ConfidentialTransferAccount(*extension));
             }
             ExtensionType::ConfidentialTransferMint => {
-                let extension = account_state
-                    .get_extension::<ConfidentialTransferMint>()
-                    .unwrap();
+                let extension = account_state.get_extension::<ConfidentialTransferMint>().unwrap();
                 extensions.push(ExtensionStruct::ConfidentialTransferMint(*extension));
             }
             ExtensionType::CpiGuard => {
@@ -180,9 +177,7 @@ pub fn get_account_extensions<'data, S: BaseState + Pack>(
                 extensions.push(ExtensionStruct::CpiGuard(*extension));
             }
             ExtensionType::DefaultAccountState => {
-                let extension = account_state
-                    .get_extension::<DefaultAccountState>()
-                    .unwrap();
+                let extension = account_state.get_extension::<DefaultAccountState>().unwrap();
                 extensions.push(ExtensionStruct::DefaultAccountState(*extension));
             }
             ExtensionType::ImmutableOwner => {
@@ -190,9 +185,7 @@ pub fn get_account_extensions<'data, S: BaseState + Pack>(
                 extensions.push(ExtensionStruct::ImmutableOwner(*extension));
             }
             ExtensionType::InterestBearingConfig => {
-                let extension = account_state
-                    .get_extension::<InterestBearingConfig>()
-                    .unwrap();
+                let extension = account_state.get_extension::<InterestBearingConfig>().unwrap();
                 extensions.push(ExtensionStruct::InterestBearingConfig(*extension));
             }
             ExtensionType::MemoTransfer => {
@@ -208,9 +201,7 @@ pub fn get_account_extensions<'data, S: BaseState + Pack>(
                 extensions.push(ExtensionStruct::NonTransferable(*extension));
             }
             ExtensionType::NonTransferableAccount => {
-                let extension = account_state
-                    .get_extension::<NonTransferableAccount>()
-                    .unwrap();
+                let extension = account_state.get_extension::<NonTransferableAccount>().unwrap();
                 extensions.push(ExtensionStruct::NonTransferableAccount(*extension));
             }
             ExtensionType::PermanentDelegate => {
@@ -260,20 +251,20 @@ pub fn multipler(decimals: u8) -> f64 {
 }
 
 pub fn price_to_x64(price: f64) -> u128 {
-    (price * fixed_point_64::Q64 as f64) as u128
+    (price * (fixed_point_64::Q64 as f64)) as u128
 }
 
 pub fn from_x64_price(price: u128) -> f64 {
-    price as f64 / fixed_point_64::Q64 as f64
+    (price as f64) / (fixed_point_64::Q64 as f64)
 }
 
 pub fn price_to_sqrt_price_x64(price: f64, decimals_0: u8, decimals_1: u8) -> u128 {
-    let price_with_decimals = price * multipler(decimals_1) / multipler(decimals_0);
+    let price_with_decimals = (price * multipler(decimals_1)) / multipler(decimals_0);
     price_to_x64(price_with_decimals.sqrt())
 }
 
 pub fn sqrt_price_x64_to_price(price: u128, decimals_0: u8, decimals_1: u8) -> f64 {
-    from_x64_price(price).powi(2) * multipler(decimals_0) / multipler(decimals_1)
+    (from_x64_price(price).powi(2) * multipler(decimals_0)) / multipler(decimals_1)
 }
 
 // the top level state of the swap, the results of which are recorded in storage at the end
@@ -316,7 +307,7 @@ pub fn get_out_put_amount_and_remaining_accounts(
     pool_config: &AmmConfig,
     pool_state: &PoolState,
     tickarray_bitmap_extension: &TickArrayBitmapExtension,
-    tick_arrays: &mut VecDeque<TickArrayState>,
+    tick_arrays: &mut VecDeque<TickArrayState>
 ) -> Result<(u64, VecDeque<i32>), &'static str> {
     let (is_pool_current_tick_array, current_valid_tick_array_start_index) = pool_state
         .get_first_initialized_tick_array(&Some(*tickarray_bitmap_extension), zero_for_one)
@@ -332,7 +323,7 @@ pub fn get_out_put_amount_and_remaining_accounts(
         sqrt_price_limit_x64.unwrap_or(0),
         pool_state,
         tickarray_bitmap_extension,
-        tick_arrays,
+        tick_arrays
     )?;
     println!("tick_array_start_index:{:?}", tick_array_start_index_vec);
 
@@ -349,7 +340,7 @@ fn swap_compute(
     sqrt_price_limit_x64: u128,
     pool_state: &PoolState,
     tickarray_bitmap_extension: &TickArrayBitmapExtension,
-    tick_arrays: &mut VecDeque<TickArrayState>,
+    tick_arrays: &mut VecDeque<TickArrayState>
 ) -> Result<(u64, VecDeque<i32>), &'static str> {
     if amount_specified == 0 {
         return Result::Err("amountSpecified must not be 0");
@@ -396,10 +387,11 @@ fn swap_compute(
     tick_array_start_index_vec.push_back(tick_array_current.start_tick_index);
     let mut loop_count = 0;
     // loop across ticks until input liquidity is consumed, or the limit price is reached
-    while state.amount_specified_remaining != 0
-        && state.sqrt_price_x64 != sqrt_price_limit_x64
-        && state.tick < tick_math::MAX_TICK
-        && state.tick > tick_math::MIN_TICK
+    while
+        state.amount_specified_remaining != 0 &&
+        state.sqrt_price_x64 != sqrt_price_limit_x64 &&
+        state.tick < tick_math::MAX_TICK &&
+        state.tick > tick_math::MIN_TICK
     {
         if loop_count > 10 {
             return Result::Err("loop_count limit");
@@ -407,19 +399,16 @@ fn swap_compute(
         let mut step = StepComputations::default();
         step.sqrt_price_start_x64 = state.sqrt_price_x64;
         // save the bitmap, and the tick account if it is initialized
-        let mut next_initialized_tick = if let Some(tick_state) = tick_array_current
-            .next_initialized_tick(state.tick, pool_state.tick_spacing, zero_for_one)
-            .unwrap()
+        let mut next_initialized_tick = if
+            let Some(tick_state) = tick_array_current
+                .next_initialized_tick(state.tick, pool_state.tick_spacing, zero_for_one)
+                .unwrap()
         {
             Box::new(*tick_state)
         } else {
             if !tick_match_current_tick_array {
                 tick_match_current_tick_array = true;
-                Box::new(
-                    *tick_array_current
-                        .first_initialized_tick(zero_for_one)
-                        .unwrap(),
-                )
+                Box::new(*tick_array_current.first_initialized_tick(zero_for_one).unwrap())
             } else {
                 Box::new(TickState::default())
             }
@@ -429,15 +418,14 @@ fn swap_compute(
                 .next_initialized_tick_array_start_index(
                     &Some(*tickarray_bitmap_extension),
                     current_valid_tick_array_start_index,
-                    zero_for_one,
+                    zero_for_one
                 )
                 .unwrap();
             tick_array_current = tick_arrays.pop_front().unwrap();
             if current_valid_tick_array_start_index.is_none() {
                 return Result::Err("tick array start tick index out of range limit");
             }
-            if tick_array_current.start_tick_index != current_valid_tick_array_start_index.unwrap()
-            {
+            if tick_array_current.start_tick_index != current_valid_tick_array_start_index.unwrap() {
                 return Result::Err("tick array start tick index does not match");
             }
             tick_array_start_index_vec.push_back(tick_array_current.start_tick_index);
@@ -457,45 +445,41 @@ fn swap_compute(
 
         step.sqrt_price_next_x64 = tick_math::get_sqrt_price_at_tick(step.tick_next).unwrap();
 
-        let target_price = if (zero_for_one && step.sqrt_price_next_x64 < sqrt_price_limit_x64)
-            || (!zero_for_one && step.sqrt_price_next_x64 > sqrt_price_limit_x64)
+        let target_price = if
+            (zero_for_one && step.sqrt_price_next_x64 < sqrt_price_limit_x64) ||
+            (!zero_for_one && step.sqrt_price_next_x64 > sqrt_price_limit_x64)
         {
             sqrt_price_limit_x64
         } else {
             step.sqrt_price_next_x64
         };
-        let swap_step = swap_math::compute_swap_step(
-            state.sqrt_price_x64,
-            target_price,
-            state.liquidity,
-            state.amount_specified_remaining,
-            fee,
-            is_base_input,
-            zero_for_one,
-            1,
-        )
-        .unwrap();
+        let swap_step = swap_math
+            ::compute_swap_step(
+                state.sqrt_price_x64,
+                target_price,
+                state.liquidity,
+                state.amount_specified_remaining,
+                fee,
+                is_base_input,
+                zero_for_one,
+                1
+            )
+            .unwrap();
         state.sqrt_price_x64 = swap_step.sqrt_price_next_x64;
         step.amount_in = swap_step.amount_in;
         step.amount_out = swap_step.amount_out;
         step.fee_amount = swap_step.fee_amount;
 
         if is_base_input {
-            state.amount_specified_remaining = state
-                .amount_specified_remaining
+            state.amount_specified_remaining = state.amount_specified_remaining
                 .checked_sub(step.amount_in + step.fee_amount)
                 .unwrap();
-            state.amount_calculated = state
-                .amount_calculated
-                .checked_add(step.amount_out)
-                .unwrap();
+            state.amount_calculated = state.amount_calculated.checked_add(step.amount_out).unwrap();
         } else {
-            state.amount_specified_remaining = state
-                .amount_specified_remaining
+            state.amount_specified_remaining = state.amount_specified_remaining
                 .checked_sub(step.amount_out)
                 .unwrap();
-            state.amount_calculated = state
-                .amount_calculated
+            state.amount_calculated = state.amount_calculated
                 .checked_add(step.amount_in + step.fee_amount)
                 .unwrap();
         }
@@ -507,15 +491,12 @@ fn swap_compute(
                 if zero_for_one {
                     liquidity_net = liquidity_net.neg();
                 }
-                state.liquidity =
-                    liquidity_math::add_delta(state.liquidity, liquidity_net).unwrap();
+                state.liquidity = liquidity_math
+                    ::add_delta(state.liquidity, liquidity_net)
+                    .unwrap();
             }
 
-            state.tick = if zero_for_one {
-                step.tick_next - 1
-            } else {
-                step.tick_next
-            };
+            state.tick = if zero_for_one { step.tick_next - 1 } else { step.tick_next };
         } else if state.sqrt_price_x64 != step.sqrt_price_start_x64 {
             // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
             state.tick = tick_math::get_tick_at_sqrt_price(state.sqrt_price_x64).unwrap();

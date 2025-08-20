@@ -2,9 +2,9 @@ use super::open_position::open_position;
 use crate::states::*;
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::token::{ self, Token };
+use anchor_spl::token_interface::{ Mint, Token2022, TokenAccount };
 use anchor_spl::metadata::Metadata;
-use anchor_spl::token::{self, Token};
-use anchor_spl::token_interface::{Mint, Token2022, TokenAccount};
 #[derive(Accounts)]
 #[instruction(tick_lower_index: i32, tick_upper_index: i32,tick_array_lower_start_index:i32,tick_array_upper_start_index:i32)]
 pub struct OpenPositionV2<'info> {
@@ -16,12 +16,7 @@ pub struct OpenPositionV2<'info> {
     pub position_nft_owner: UncheckedAccount<'info>,
 
     /// Unique token mint address
-    #[account(
-        init,
-        mint::decimals = 0,
-        mint::authority = pool_state.key(),
-        payer = payer,
-    )]
+    #[account(init, mint::decimals = 0, mint::authority = pool_state.key(), payer = payer)]
     pub position_nft_mint: Box<Account<'info, token::Mint>>,
 
     /// Token account where position NFT will be minted
@@ -29,7 +24,7 @@ pub struct OpenPositionV2<'info> {
         init,
         associated_token::mint = position_nft_mint,
         associated_token::authority = position_nft_owner,
-        payer = payer,
+        payer = payer
     )]
     pub position_nft_account: Box<Account<'info, token::TokenAccount>>,
 
@@ -136,14 +131,10 @@ pub struct OpenPositionV2<'info> {
     /// Program to create mint account and mint tokens
     pub token_program_2022: Program<'info, Token2022>,
     /// The mint of token vault 0
-    #[account(
-        address = token_vault_0.mint
-    )]
+    #[account(address = token_vault_0.mint)]
     pub vault_0_mint: Box<InterfaceAccount<'info, Mint>>,
     /// The mint of token vault 1
-    #[account(
-        address = token_vault_1.mint
-    )]
+    #[account(address = token_vault_1.mint)]
     pub vault_1_mint: Box<InterfaceAccount<'info, Mint>>,
     // remaining account
     // #[account(
@@ -166,7 +157,7 @@ pub fn open_position_v2<'a, 'b, 'c: 'info, 'info>(
     tick_array_lower_start_index: i32,
     tick_array_upper_start_index: i32,
     with_metadata: bool,
-    base_flag: Option<bool>,
+    base_flag: Option<bool>
 ) -> Result<()> {
     open_position(
         &ctx.accounts.payer,
@@ -203,6 +194,6 @@ pub fn open_position_v2<'a, 'b, 'c: 'info, 'info>(
         tick_array_upper_start_index,
         with_metadata,
         base_flag,
-        false,
+        false
     )
 }
